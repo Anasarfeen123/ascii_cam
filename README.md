@@ -172,5 +172,3 @@ This project is open source. Feel free to use, modify, and distribute as needed.
 - OpenCV for camera capture functionality
 - Colorama for terminal color support
 - The ASCII art community for inspiration
-=======
-
