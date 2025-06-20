@@ -171,8 +171,6 @@ This project is open source. Feel free to use, modify, and distribute as needed.
 
 - OpenCV for camera capture functionality
 - Colorama for terminal color support
-<<<<<<< HEAD
 - The ASCII art community for inspiration
 =======
-- The ASCII art community for inspiration
->>>>>>> 3691c1026ee9f903d28661da1313771301fdc0b5
+
