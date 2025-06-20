@@ -3,7 +3,7 @@ import colorama
 from colorama import Fore, Back, Style
 
 
-im = Image.open(r"pill/assets/images.jpeg")
+im = Image.open(r"assets/images.jpeg")
 
 new_width = 100
 aspect_ratio = im.height / im.width
