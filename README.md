@@ -81,7 +81,7 @@ Contributions are welcome! If you have ideas to improve the project — whether 
 1. Fork the repository
 2. Clone your fork
    ```bash
-   git clone https://github.com/your-username/ascii_cam.git
+   git clone https://github.com/Anasarfeen123/ascii_cam.git
    ```
 3. Create a new branch
    ```bash
