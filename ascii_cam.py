@@ -17,12 +17,9 @@ def get_rcb(value):
     elif brightness > 200 and abs(r - g) < 25 and abs(g - b) < 25:
         return Fore.WHITE
     elif (
-        60 < r < 120 and 
-        40 < g < 110 and 
-        20 < b < 100 and 
-        r > g and g > b and
-        abs(r - g) < 50
-    ):
+        50 < r < 130 and 
+        20 < g < 120 and 
+        20 < b < 120):
         return Fore.YELLOW
     elif r > 180 and b > 180 and g < 140:
         return Fore.MAGENTA
@@ -58,7 +55,7 @@ def get_gradient(inp=1):
 
 new_size = tuple(resize_frame())
 
-def frame_to_ascii(frame, gradient, colr, val="@"):
+def frame_to_ascii(frame, gradient, colr, val="█"):
     im = Image.fromarray(frame)
     im = im.resize(new_size)
     pixels = list(im.getdata())
@@ -112,7 +109,7 @@ if __name__ == "__main__":
         grad = get_gradient(g)
     
     elif col == "clr":
-        val = input("Enter character to render (default '@'): ").strip() or "@"
+        val = input("Enter character to render (default '█'): ").strip() or "█"
         grad = ""
     
     while True:
@@ -121,7 +118,7 @@ if __name__ == "__main__":
             clear_terminal()
             if col == "bw":
                 bw_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                frame_to_ascii(bw_frame, grad, col, val)
+                frame_to_ascii(bw_frame, grad, col, 0)
             else:
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_to_ascii(rgb_frame, grad, col, val)
