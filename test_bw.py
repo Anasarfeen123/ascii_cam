@@ -1,7 +1,7 @@
 from PIL import Image # type: ignore
 import shutil
 
-im = (Image.open("assets/image.png")).convert("L")
+im = (Image.open("diwali.jpg")).convert("L")
 pixels = list(im.getdata())
 
 columns = shutil.get_terminal_size().columns
