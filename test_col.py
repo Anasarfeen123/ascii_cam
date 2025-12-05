@@ -1,75 +1,76 @@
-from PIL import Image # type: ignore
+from PIL import Image  # type: ignore
 import colorama
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
+import shutil
+import os
 
+colorama.init()
 
-im = Image.open(r"diwali.jpg")
+def rgb_fg(r, g, b, text):
+    return f"\033[38;2;{r};{g};{b}m{text}\033[0m"
 
-new_width = 100
-aspect_ratio = im.height / im.width
-new_height = int(aspect_ratio * new_width * 0.55)
-im = im.resize((new_width, new_height))
+def color_for_pixel_ansi(r, g, b):
+    brightness = 0.299 * r + 0.587 * g + 0.114 * b
+    if brightness < 30:
+        return Fore.BLACK
+    elif brightness > 240 and abs(r - g) < 20 and abs(g - b) < 20:
+        return Fore.WHITE
+    elif r > 180 and g > 180 and b < 100:
+        return Fore.YELLOW
+    elif r > 180 and b > 180 and g < 150:
+        return Fore.MAGENTA
+    elif g > 180 and b > 180 and r < 150:
+        return Fore.CYAN
+    elif r > g + 40 and r > b + 40:
+        return Fore.RED
+    elif b > r + 40 and b > g + 40:
+        return Fore.BLUE
+    elif g > r + 40 and g > b + 40:
+        return Fore.GREEN
+    else:
+        return Fore.LIGHTBLACK_EX
 
-pixels = list(im.getdata())
-width, height = im.size
+def supports_truecolor():
+    colorterm = os.environ.get("COLORTERM", "").lower()
+    term = os.environ.get("TERM", "").lower()
+    if "truecolor" in colorterm or "24bit" in colorterm:
+        return True
+    if "direct" in os.environ.get("KONSOLE_PROFILE_NAME", "").lower():
+        return True
+    return "truecolor" in term or False
 
-pixels = [pixels[i * width:(i + 1) * width] for i in range(height)]
+def main(path="diwali.jpg"):
+    im = Image.open(path).convert("RGB")
 
-inp = input("Enter a character (Press enter for default): ")
-if inp=="" or inp[0].strip() == "":
-    val = "█"
-else: val = inp[0]
+    term_width = shutil.get_terminal_size((120, 25)).columns
+    max_width = min(160, term_width - 4)
+    new_width = max(40, min(100, max_width))
 
-for row in pixels:
-    for value in row:
-        r,g,b = value
-        brightness = 0.299*r + 0.587*g + 0.114*b
-        if brightness<30:
-            print(Fore.BLACK+val,end="")
-        elif brightness > 240 and abs(r - g) < 20 and abs(g - b) < 20:
-            print(Fore.WHITE+val,end="")
-        elif r > 180 and g > 180 and b < 100:
-            print(Fore.YELLOW+val,end="")
-        elif r > 180 and b > 180 and g < 150:
-            print(Fore.MAGENTA+val,end="")
-        elif g > 180 and b > 180 and r < 150:
-            print(Fore.CYAN+val,end="")
-        elif r > g + 40 and r > b + 40:
-            print(Fore.RED+val,end="")
-        elif b > r + 40 and b > g + 40:
-            print(Fore.BLUE+val,end="")
-        elif g > r + 40 and g > b + 40:
-            print(Fore.GREEN+val,end="")
+    aspect_ratio = im.height / im.width
+    char_aspect = 0.55
+    new_height = int(aspect_ratio * new_width * char_aspect) or 1
+
+    im = im.resize((new_width, new_height))
+
+    pixels = list(im.getdata())
+    width, height = im.size
+    pixels = [pixels[i * width:(i + 1) * width] for i in range(height)]
+
+    # Ask character once (keeps behaviour you had)
+    inp = input("Enter a character (Press enter for default '█'): ")
+    val = inp[0] if inp else "█"
+
+    use_true = supports_truecolor()
+
+    for row in pixels:
+        if use_true:
+            line = "".join(rgb_fg(r, g, b, val) for (r, g, b) in row)
+            print(line)
         else:
-            print(Fore.LIGHTBLACK_EX+val, end="")
-    print(Style.RESET_ALL)
-            
-        
-             
-    #     if value[0]>200:
-    #         if value[1]>200:
-    #             if value[2]>200:
-    #             else:
-    #         else:
-    #             if value[2]>200:
-    #             else:
-    #     else:
-    #         if value[1]>200:
-    #             if value[2]>200:
-    #                 print(Fore.CYAN+"█",end="")
-    #             else:
-    #                 print(Fore.GREEN+"█",end="")
-    #         elif value[2]>200:
-    #             print(Fore.BLUE+"█",end="")
-    #         else:
-    #             print(Fore.BLACK+"█",end="")
+            line_builder = []
+            for r, g, b in row:
+                line_builder.append(color_for_pixel_ansi(r, g, b) + val)
+            print("".join(line_builder) + Style.RESET_ALL)
 
-
-
-
-# with open("ascii_output.txt", "w") as f:
-#     for row in pixels:
-#         for value in row:
-#             idx = int(value / 255 * (len(gradient) - 1))
-#             f.write(gradient[idx])
-#         f.write('\n')
+if __name__ == "__main__":
+    main("diwali.jpg")
