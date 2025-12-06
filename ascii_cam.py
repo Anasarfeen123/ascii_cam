@@ -5,6 +5,7 @@ import cv2, time, os, sys
 import numpy as np
 from colorama import Style
 import shutil
+import argparse
 
 # --- config defaults ---
 DEFAULT_WIDTH = 80            # width in characters
@@ -13,6 +14,23 @@ FRAME_RATE = 0.08             # seconds between frames (smaller -> faster)
 USE_TRUECOLOR_ENV = True      # attempt truecolor by env check
 
 # --- helpers ---
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="ASCII Camera (terminal & SSH friendly)"
+    )
+    parser.add_argument(
+        "--ssh",
+        action="store_true",
+        help="Force headless mode (no GUI, stdin controls, SSH-safe)"
+    )
+    parser.add_argument(
+        "--width",
+        type=int,
+        default=DEFAULT_WIDTH,
+        help="ASCII output width in characters"
+    )
+    return parser.parse_args()
+
 def supports_truecolor():
     colorterm = os.environ.get("COLORTERM", "").lower()
     term = os.environ.get("TERM", "").lower()
@@ -92,7 +110,6 @@ def stdin_key_pressed():
         return ord(sys.stdin.read(1))
     return None
 # -----------------------------------------------------------------
-
 # --- main logic (unchanged algorithmic parts) ---
 def frame_to_ascii_cv(frame, new_size, gradient, mode_color, char="█", use_truecolor=True, use_bg=False):
     w_chars, h_chars = new_size
@@ -130,6 +147,8 @@ def frame_to_ascii_cv(frame, new_size, gradient, mode_color, char="█", use_tru
                     rows.append(row_str + Style.RESET_ALL)
         return "\n".join(rows)
 
+args = parse_args()
+
 def main():
     cam = VideoCapture(0)
     if not cam.isOpened():
@@ -151,7 +170,8 @@ def main():
 
     term_width = shutil.get_terminal_size((120, 25)).columns
     max_width = max(20, min(160, term_width - 4))
-    w_chars = min(DEFAULT_WIDTH, max_width)
+    w_chars = min(args.width, max_width)
+
 
     ret, frame_sample = cam.read()
     if not ret:
@@ -164,8 +184,9 @@ def main():
 
     use_true = supports_truecolor() if USE_TRUECOLOR_ENV else False
     use_bg = False
-    show_original = GUI_AVAILABLE  # only show preview if GUI works
-
+    show_original = GUI_AVAILABLE and not args.ssh
+    if args.ssh:
+        print("[ssh-mode] GUI disabled, running terminal-only.")
     # enable terminal raw mode for stdin key reads if GUI is unavailable or to support keys alongside GUI
     enable_raw_mode()
 
@@ -183,21 +204,14 @@ def main():
             print(ascii_frame)
 
             key = None
-            if GUI_AVAILABLE and show_original:
-                # try to show preview window; catch exceptions and fall back if necessary
+            if (GUI_AVAILABLE and show_original) and not args.ssh:
                 try:
                     imshow("Camera", frame)
                     key = waitKey(1) & 0xFF
                 except Exception:
-                    # GUI broke mid-run -> disable it
                     show_original = False
-                    try:
-                        destroyAllWindows()
-                    except Exception:
-                        pass
                     key = stdin_key_pressed()
             else:
-                # no GUI: read keys from stdin
                 key = stdin_key_pressed()
 
             if key == ord('q'):
