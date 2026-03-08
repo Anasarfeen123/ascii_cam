@@ -69,7 +69,7 @@ if __name__ == "__main__":
     char_choice = input("Enter character (default '█'): ") or "█"
     
     # Call function and store the result
-    ascii_result = get_image_ascii("diwali.jpg", char_choice)
+    ascii_result = get_image_ascii("holi.jpg", char_choice)
     
     # Now you can do whatever you want with the string!
     # For example, print it:
