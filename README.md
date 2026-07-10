@@ -27,11 +27,13 @@ A terminal-based camera display using ASCII characters — supports both black &
 
 ## 🗂️ Files Overview
 
-| File           | Description |
-|----------------|-------------|
-| `ascii_cam.py` | 🔴 **Main script**: Live webcam ASCII renderer with real-time color & grayscale modes |
-| `test_bw.py`   | 🖼️ Static image to **B/W ASCII art** using grayscale gradients |
-| `test_col.py`  | 🎨 Static image to **colored ASCII art** using RGB to ANSI Fore color mapping |
+| File / Folder | Description |
+|---|---|
+| `ascii_cam.py` | 🔴 **Live webcam feed**: Main webcam ASCII renderer with real-time color & grayscale modes |
+| `ascii_image.py` | 🖼️ **Advanced Image CLI**: Convert static images (local or URLs) with full CLI args, HTML/TXT exports |
+| `image_bw.py` | 🖼️ Static image to **B/W ASCII art** using grayscale gradients (legacy) |
+| `image_col.py` | 🎨 Static image to **colored ASCII art** using RGB to ANSI Fore color mapping (legacy) |
+| `web/` | 🌐 **Web Studio**: A stunning glassmorphic web application for webcam, upload, and URL ASCII rendering |
 
 ---
 
@@ -42,33 +44,49 @@ A terminal-based camera display using ASCII characters — supports both black &
 pip install -r requirements.txt
 ```
 
-### 2. Run Live Camera ASCII
+### 2. Run Live Camera ASCII (Terminal)
 ```bash
 python ascii_cam.py
 ```
-
-You'll be prompted to select:
-- Color or Black & White mode
-- Custom character (for color)
-- Gradient set (for B/W)
 
 Use these keys during runtime:
 
 | Key | Action |
 |-----|--------|
 | `q` | Quit |
-| `+` / `-` | Adjust delay (speed) |
-| `v` | Toggle webcam preview |
+| `+` / `-` | Adjust speed / delay |
+| `b` | Toggle block background mode |
+| `v` | Toggle original webcam preview |
 
-### 3. Convert Static Image to ASCII
+### 3. Convert Static Image / URL to ASCII (CLI)
+Use the advanced `ascii_image.py` utility which supports both local images and URLs:
 ```bash
-python test_bw.py
-```
-```bash
-python test_col.py
+# Basic conversion (auto terminal width)
+python ascii_image.py diwali.jpg
+
+# Fetch from URL, specify custom width & color mode
+python ascii_image.py https://example.com/logo.png --width 80 --mode color
+
+# Grayscale / Black & White with customized gradient sets
+python ascii_image.py Anas.jpg --mode bw --gradient blocks --invert
+
+# Export to colored HTML or plain TXT file
+python ascii_image.py diwali.jpg --output art.html
+python ascii_image.py diwali.jpg --output art.txt --width 120
 ```
 
-📌 **Note:** Currently, `test_bw.py` and `test_col.py` use a sample image hardcoded in the script. You can replace the path manually for now. Support for custom paths will be added in the next version.
+Run `python ascii_image.py --help` to see all available CLI options.
+
+### 4. Run the Web Studio
+The project includes a gorgeous web interface for real-time ASCII conversion (Webcam, Upload, URL).
+
+You can open the web app instantly:
+- Simply double-click/open [web/index.html](file:///home/anasa/Projects/ascii_cam/web/index.html) in any modern browser.
+- **Or** run a local web server:
+  ```bash
+  python -m http.server 8000 --directory web
+  ```
+  Then visit `http://localhost:8000` in your browser.
 
 ---
 

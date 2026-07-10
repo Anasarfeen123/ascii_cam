@@ -2,7 +2,8 @@ from PIL import Image
 import shutil
 import os
 
-def get_image_to_ascii_bw(path="diwali.jpg"):
+
+def get_image_to_ascii_bw(path="Anas.jpg"):
     """
     Converts an image to a grayscale ASCII string and returns it.
     """
@@ -18,10 +19,10 @@ def get_image_to_ascii_bw(path="diwali.jpg"):
     # 2. Dimensions
     columns = shutil.get_terminal_size().columns
     new_width = min(columns, 120)
-    
+
     aspect_ratio = im.height / im.width
     new_height = int(aspect_ratio * new_width * 0.55)
-    
+
     im = im.resize((new_width, max(1, new_height)), Image.Resampling.LANCZOS)
 
     # 3. Process Pixels
@@ -38,15 +39,17 @@ def get_image_to_ascii_bw(path="diwali.jpg"):
             # Map 0-255 to gradient index
             idx = int(pixel_val / 256 * num_chars)
             row_chars.append(gradient[idx])
-        
+
         output_rows.append("".join(row_chars))
 
     # Return the final multi-line string
     return "\n".join(output_rows)
 
+
 if __name__ == "__main__":
     # Example usage:
-    ascii_art = get_image_to_ascii_bw("diwali.jpg")
-    
+    ascii_art = get_image_to_ascii_bw()
+
     # Now you can print it, save it, or send it elsewhere
     print(ascii_art)
+

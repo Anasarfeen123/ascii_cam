@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Cam & Art Studio</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <i data-lucide="terminal" class="logo-icon"></i>
+                <div>
+                    <h1>ASCII Cam Studio</h1>
+                    <p class="subtitle">Convert photos, webcam feeds, & URLs to ASCII art in real-time</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span class="badge live-badge" id="camera-status" style="display: none;">
+                    <span class="pulse-dot"></span> Webcam Active
+                </span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Sidebar Controls -->
+            <aside class="controls-panel card">
+                <div class="section-title">
+                    <i data-lucide="image"></i>
+                    <h2>Input Source</h2>
+                </div>
+
+                <!-- Source Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="upload">
+                        <i data-lucide="upload"></i> File
+                    </button>
+                    <button class="tab-btn" data-tab="webcam" id="webcam-tab-btn">
+                        <i data-lucide="video"></i> Webcam
+                    </button>
+                    <button class="tab-btn" data-tab="url">
+                        <i data-lucide="link"></i> URL
+                    </button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="tab-content" id="tab-upload">
+                    <div class="drop-zone" id="drop-zone">
+                        <i data-lucide="cloud-upload" class="drop-icon"></i>
+                        <p class="drop-text">Drag & drop image or <span class="highlight">browse</span></p>
+                        <p class="drop-sub">PNG, JPEG, WEBP, GIF</p>
+                        <input type="file" id="file-input" accept="image/*" class="file-input-hidden">
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-webcam">
+                    <div class="webcam-control-box">
+                        <div class="video-preview-container">
+                            <video id="webcam-video" autoplay playsinline muted></video>
+                            <div class="video-placeholder" id="webcam-placeholder">
+                                <i data-lucide="video-off"></i>
+                                <p>Camera preview inactive</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-full" id="toggle-webcam-btn">
+                            <i data-lucide="play"></i> Start Camera Feed
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-url">
+                    <div class="url-input-box">
+                        <label for="url-input">Image URL</label>
+                        <div class="input-with-btn">
+                            <input type="url" id="url-input" placeholder="https://example.com/image.jpg">
+                            <button class="btn btn-primary" id="load-url-btn">Load</button>
+                        </div>
+                        <p class="input-help"><i data-lucide="info" class="inline-icon"></i> Note: Images must support CORS. Direct URL fetch may fail if restricted.</p>
+                    </div>
+                </div>
+
+                <!-- Customization Options -->
+                <div class="section-title margin-top">
+                    <i data-lucide="sliders"></i>
+                    <h2>ASCII Settings</h2>
+                </div>
+
+                <div class="settings-group">
+                    <!-- Render Mode -->
+                    <div class="control-item">
+                        <label>Color Mode</label>
+                        <div class="btn-group" id="color-mode-group">
+                            <button class="group-btn active" data-value="color">Colored</button>
+                            <button class="group-btn" data-value="bw">Grayscale</button>
+                        </div>
+                    </div>
+
+                    <!-- Output Type -->
+                    <div class="control-item" id="output-type-item">
+                        <label>Render Style</label>
+                        <div class="btn-group" id="render-style-group">
+                            <button class="group-btn active" data-value="char">Characters</button>
+                            <button class="group-btn" data-value="bg">Solid Block</button>
+                        </div>
+                    </div>
+
+                    <!-- Characters Preset -->
+                    <div class="control-item" id="char-preset-item">
+                        <label for="char-preset">Character Set</label>
+                        <select id="char-preset" class="form-select">
+                            <option value="blocks">█▓▒░ Block Shading (Smooth)</option>
+                            <option value="standard">@#%*+=-:. Standard Characters</option>
+                            <option value="1">.',:;clxokXdO0KN Complex Set</option>
+                            <option value="custom">Custom Character...</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Character Input (hidden initially) -->
+                    <div class="control-item hidden" id="custom-char-item">
+                        <label for="custom-char">Custom Render Symbol</label>
+                        <input type="text" id="custom-char" maxlength="10" value="█" class="form-input">
+                    </div>
+
+                    <!-- Resolution (Width) -->
+                    <div class="control-item">
+                        <div class="label-with-value">
+                            <label for="resolution-range">Output Width</label>
+                            <span class="value-badge" id="resolution-value">100 chars</span>
+                        </div>
+                        <input type="range" id="resolution-range" min="30" max="250" value="100" class="form-range">
+                    </div>
+
+                    <!-- Aspect Ratio Adjustment -->
+                    <div class="control-item">
+                        <div class="label-with-value">
+                            <label for="aspect-range">Char Aspect Ratio (Correction)</label>
+                            <span class="value-badge" id="aspect-value">0.55</span>
+                        </div>
+                        <input type="range" id="aspect-range" min="0.3" max="1.0" step="0.05" value="0.55" class="form-range">
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="control-item">
+                        <div class="label-with-value">
+                            <label for="brightness-range">Brightness</label>
+                            <span class="value-badge" id="brightness-value">1.0</span>
+                        </div>
+                        <input type="range" id="brightness-range" min="0.5" max="2.0" step="0.05" value="1.0" class="form-range">
+                    </div>
+
+                    <div class="control-item">
+                        <div class="label-with-value">
+                            <label for="contrast-range">Contrast</label>
+                            <span class="value-badge" id="contrast-value">1.0</span>
+                        </div>
+                        <input type="range" id="contrast-range" min="0.5" max="2.0" step="0.05" value="1.0" class="form-range">
+                    </div>
+
+                    <!-- Invert -->
+                    <div class="control-item flex-row">
+                        <label for="invert-checkbox">Invert Colors / Grayscale</label>
+                        <label class="switch">
+                            <input type="checkbox" id="invert-checkbox">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Output Display -->
+            <section class="display-panel card">
+                <div class="display-header">
+                    <div class="title-with-icon">
+                        <i data-lucide="eye" class="display-icon"></i>
+                        <h2>ASCII Art Output</h2>
+                    </div>
+                    <div class="output-actions">
+                        <button class="btn btn-secondary btn-sm" id="copy-btn">
+                            <i data-lucide="copy"></i> Copy Text
+                        </button>
+                        <button class="btn btn-secondary btn-sm" id="download-txt-btn">
+                            <i data-lucide="download"></i> Download TXT
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="download-html-btn">
+                            <i data-lucide="file-code"></i> Save HTML
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ascii-viewport">
+                    <!-- The ASCII Art is rendered inside this pre block -->
+                    <pre id="ascii-output" class="ascii-output"></pre>
+                    
+                    <div class="status-overlay" id="status-overlay">
+                        <div class="spinner"></div>
+                        <p id="status-message">Load an image to begin conversion...</p>
+                    </div>
+                </div>
+
+                <!-- Stats Footer -->
+                <div class="display-footer">
+                    <div class="stat-item">
+                        <span class="stat-label">Dimensions:</span>
+                        <span class="stat-value" id="stat-dim">0 x 0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Frame Time:</span>
+                        <span class="stat-value" id="stat-fps">0 ms</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Characters:</span>
+                        <span class="stat-value" id="stat-chars">0</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Hidden elements for canvas processing -->
+    <canvas id="proc-canvas" style="display: none;"></canvas>
+    
+    <script src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
