@@ -5,7 +5,7 @@ import shutil
 import argparse
 import urllib.request
 import io
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageOps, ImageFilter
 import numpy as np
 import colorama
 from colorama import Fore, Style
@@ -71,16 +71,20 @@ def load_image(path_or_url):
             raise FileNotFoundError(f"Local file not found: {path_or_url}")
         return Image.open(path_or_url)
 
-def image_to_ascii(im, width=None, mode="color", char="█", gradient_key="1", use_bg=False, invert=False):
+def image_to_ascii(im, width=None, mode="color", char="█", gradient_key="1", use_bg=False, invert=False, enhance_face=True):
     """
     Processes the image and returns:
       1. Display string (with ANSI color codes for terminal)
       2. Raw text string (no ANSI codes, standard characters)
       3. HTML formatted string (with colored inline styles)
+      4. Downscaled RGB pixel array
     """
     # 1. Convert modes
     if mode == "bw":
         im_gray = im.convert("L")
+        if enhance_face:
+            im_gray = ImageOps.autocontrast(im_gray, cutoff=2)
+            im_gray = im_gray.filter(ImageFilter.SHARPEN)
         im_rgb = im.convert("RGB") # Keep RGB for width calculations / size matching
     else:
         im_rgb = im.convert("RGB")
@@ -265,6 +269,11 @@ def main():
         "--output", "-o",
         help="Save output to a file. Supports plain text (.txt), HTML (.html), or images (.png, .jpg, .jpeg)"
     )
+    parser.add_argument(
+        "--no-enhance",
+        action="store_true",
+        help="Disable automatic facial details optimization (autocontrast and sharpening) in B&W mode"
+    )
 
     args = parser.parse_args()
 
@@ -281,7 +290,8 @@ def main():
         char=args.char,
         gradient_key=args.gradient,
         use_bg=args.bg,
-        invert=args.invert
+        invert=args.invert,
+        enhance_face=not args.no_enhance
     )
 
     # Output to screen

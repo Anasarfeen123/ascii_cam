@@ -13,6 +13,7 @@ const state = {
     brightness: 1.0,
     contrast: 1.0,
     invert: false,
+    enhanceFace: true,
     lastFrameTime: 0,
     animationFrameId: null
 };
@@ -55,6 +56,8 @@ const el = {
     contrastRange: document.getElementById('contrast-range'),
     contrastValue: document.getElementById('contrast-value'),
     invertCheckbox: document.getElementById('invert-checkbox'),
+    enhanceCheckbox: document.getElementById('enhance-checkbox'),
+    enhanceFaceItem: document.getElementById('enhance-face-item'),
     
     // Output & Overlay
     asciiOutput: document.getElementById('ascii-output'),
@@ -255,8 +258,10 @@ el.colorModeGroup.querySelectorAll('.group-btn').forEach(btn => {
         if (state.colorMode === 'bw') {
             el.outputTypeItem.classList.add('hidden');
             el.charPresetItem.classList.remove('hidden');
+            el.enhanceFaceItem.classList.remove('hidden');
         } else {
             el.outputTypeItem.classList.remove('hidden');
+            el.enhanceFaceItem.classList.add('hidden');
             if (state.renderStyle === 'bg') {
                 el.charPresetItem.classList.add('hidden');
             } else {
@@ -340,6 +345,12 @@ el.invertCheckbox.addEventListener('change', (e) => {
     triggerRender();
 });
 
+// Face details optimization checkbox
+el.enhanceCheckbox.addEventListener('change', (e) => {
+    state.enhanceFace = e.target.checked;
+    triggerRender();
+});
+
 // --- Core ASCII Rendering Engine ---
 function triggerRender() {
     if (state.sourceType === 'webcam') {
@@ -399,6 +410,23 @@ function renderASCII(source) {
     let htmlOutput = '';
     let textOutput = '';
     
+    // Check if face details optimization is active
+    let useFaceEnhancement = (state.colorMode === 'bw' && state.enhanceFace);
+    let enhancedGrays = null;
+    let minG = 255;
+    let maxG = 0;
+    let rangeG = 0;
+    
+    if (useFaceEnhancement) {
+        enhancedGrays = sharpenGrayscale(pixels, destW, destH);
+        for (let i = 0; i < destW * destH; i++) {
+            const g = enhancedGrays[i];
+            if (g < minG) minG = g;
+            if (g > maxG) maxG = g;
+        }
+        rangeG = maxG - minG;
+    }
+    
     for (let y = 0; y < destH; y++) {
         let rowHtml = '';
         let rowText = '';
@@ -410,7 +438,13 @@ function renderASCII(source) {
             const b = pixels[idx + 2];
             
             // Calculate grayscale value
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            let gray;
+            if (useFaceEnhancement) {
+                const rawGray = enhancedGrays[y * destW + x];
+                gray = rangeG > 0 ? ((rawGray - minG) / rangeG) * 255 : rawGray;
+            } else {
+                gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            }
             
             // Character matching
             const charIdx = Math.min(Math.floor((gray / 256) * numChars), numChars - 1);
@@ -574,6 +608,23 @@ el.downloadPngBtn.addEventListener('click', () => {
             }
             const numChars = characterSet.length;
             
+            // Check if face details optimization is active
+            let useFaceEnhancement = (state.colorMode === 'bw' && state.enhanceFace);
+            let enhancedGrays = null;
+            let minG = 255;
+            let maxG = 0;
+            let rangeG = 0;
+            
+            if (useFaceEnhancement) {
+                enhancedGrays = sharpenGrayscale(pixels, canvasW, canvasH);
+                for (let i = 0; i < canvasW * canvasH; i++) {
+                    const g = enhancedGrays[i];
+                    if (g < minG) minG = g;
+                    if (g > maxG) maxG = g;
+                }
+                rangeG = maxG - minG;
+            }
+            
             for (let y = 0; y < canvasH; y++) {
                 for (let x = 0; x < canvasW; x++) {
                     const idx = (y * canvasW + x) * 4;
@@ -581,7 +632,14 @@ el.downloadPngBtn.addEventListener('click', () => {
                     const g = pixels[idx + 1];
                     const b = pixels[idx + 2];
                     
-                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    let gray;
+                    if (useFaceEnhancement) {
+                        const rawGray = enhancedGrays[y * canvasW + x];
+                        gray = rangeG > 0 ? ((rawGray - minG) / rangeG) * 255 : rawGray;
+                    } else {
+                        gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    }
+                    
                     const charIdx = Math.min(Math.floor((gray / 256) * numChars), numChars - 1);
                     const c = characterSet[charIdx];
                     
@@ -613,6 +671,37 @@ el.downloadPngBtn.addEventListener('click', () => {
         }
     }, 50);
 });
+
+function sharpenGrayscale(pixels, width, height) {
+    const src = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+        const idx = i * 4;
+        src[i] = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
+    }
+    
+    const dest = new Uint8Array(width * height);
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const idx = y * width + x;
+            const val = 5 * src[idx] 
+                        - src[idx - 1] 
+                        - src[idx + 1] 
+                        - src[idx - width] 
+                        - src[idx + width];
+            dest[idx] = Math.max(0, Math.min(255, val));
+        }
+    }
+    // Copy edges
+    for (let x = 0; x < width; x++) {
+        dest[x] = src[x];
+        dest[(height - 1) * width + x] = src[(height - 1) * width + x];
+    }
+    for (let y = 0; y < height; y++) {
+        dest[y * width] = src[y * width];
+        dest[y * width + width - 1] = src[y * width + width - 1];
+    }
+    return dest;
+}
 
 // --- Helper Functions ---
 function showLoader(message) {
