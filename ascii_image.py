@@ -5,7 +5,7 @@ import shutil
 import argparse
 import urllib.request
 import io
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 import colorama
 from colorama import Fore, Style
@@ -174,8 +174,52 @@ def image_to_ascii(im, width=None, mode="color", char="█", gradient_key="1", u
     return (
         "\n".join(display_lines),
         "\n".join(plain_lines),
-        "\n".join(html_lines)
+        "\n".join(html_lines),
+        pixels_rgb
     )
+
+def save_ascii_as_image(plain_str, pixels_rgb, filename, mode="color", char="█", gradient_key="1", use_bg=False, invert=False):
+    h_chars, w_chars = pixels_rgb.shape[:2]
+    
+    char_w = 8
+    char_h = 14
+    
+    # Create image
+    img = Image.new("RGB", (w_chars * char_w, h_chars * char_h), color="black")
+    draw = ImageDraw.Draw(img)
+    
+    # Load font
+    font = None
+    font_names = ["DejaVuSansMono.ttf", "LiberationMono-Regular.ttf", "Courier New", "Courier", "monospace"]
+    for font_name in font_names:
+        try:
+            font = ImageFont.truetype(font_name, 12)
+            break
+        except IOError:
+            continue
+            
+    if font is None:
+        font = ImageFont.load_default()
+        
+    lines = plain_str.split("\n")
+    
+    for y in range(h_chars):
+        for x in range(w_chars):
+            r, g, b = pixels_rgb[y, x]
+            
+            if mode == "bw":
+                color = (255, 255, 255)
+            else:
+                color = (int(r), int(g), int(b))
+                
+            c = lines[y][x] if y < len(lines) and x < len(lines[y]) else " "
+            
+            if mode != "bw" and use_bg:
+                draw.rectangle([x * char_w, y * char_h, (x + 1) * char_w, (y + 1) * char_h], fill=color)
+            else:
+                draw.text((x * char_w, y * char_h), c, fill=color, font=font)
+                
+    img.save(filename)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -219,7 +263,7 @@ def main():
     )
     parser.add_argument(
         "--output", "-o",
-        help="Save output to a file. Saves plain text if file ends in .txt, or HTML if ends in .html"
+        help="Save output to a file. Supports plain text (.txt), HTML (.html), or images (.png, .jpg, .jpeg)"
     )
 
     args = parser.parse_args()
@@ -230,7 +274,7 @@ def main():
         print(f"Error loading image: {e}", file=sys.stderr)
         sys.exit(1)
 
-    display_str, plain_str, html_str = image_to_ascii(
+    display_str, plain_str, html_str, pixels_rgb = image_to_ascii(
         im,
         width=args.width,
         mode=args.mode,
@@ -277,6 +321,18 @@ def main():
 </body>
 </html>""")
                 print(f"\n[Saved HTML ASCII art to {args.output}]", file=sys.stderr)
+            elif args.output.lower().endswith((".png", ".jpg", ".jpeg")):
+                save_ascii_as_image(
+                    plain_str,
+                    pixels_rgb,
+                    args.output,
+                    mode=args.mode,
+                    char=args.char,
+                    gradient_key=args.gradient,
+                    use_bg=args.bg,
+                    invert=args.invert
+                )
+                print(f"\n[Saved ASCII art image to {args.output}]", file=sys.stderr)
             else:
                 with open(args.output, "w", encoding="utf-8") as f:
                     f.write(plain_str)

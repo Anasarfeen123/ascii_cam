@@ -62,6 +62,7 @@ const el = {
     statusMessage: document.getElementById('status-message'),
     copyBtn: document.getElementById('copy-btn'),
     downloadTxtBtn: document.getElementById('download-txt-btn'),
+    downloadPngBtn: document.getElementById('download-png-btn'),
     downloadHtmlBtn: document.getElementById('download-html-btn'),
     
     // Stats
@@ -535,6 +536,82 @@ el.downloadHtmlBtn.addEventListener('click', () => {
     link.download = `ascii-art-${Date.now()}.html`;
     link.click();
     URL.revokeObjectURL(url);
+});
+
+el.downloadPngBtn.addEventListener('click', () => {
+    const canvasW = el.canvas.width;
+    const canvasH = el.canvas.height;
+    
+    if (canvasW === 0 || canvasH === 0) return;
+    
+    showLoader('Generating PNG image...');
+    
+    setTimeout(() => {
+        try {
+            const charWidth = 8;
+            const charHeight = 14;
+            
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvasW * charWidth;
+            exportCanvas.height = canvasH * charHeight;
+            const eCtx = exportCanvas.getContext('2d');
+            
+            // Draw background
+            eCtx.fillStyle = '#000000';
+            eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            
+            // Draw ASCII
+            eCtx.font = 'bold 11px Courier New, monospace';
+            eCtx.textBaseline = 'top';
+            eCtx.textAlign = 'left';
+            
+            const imgData = ctx.getImageData(0, 0, canvasW, canvasH);
+            const pixels = imgData.data;
+            
+            let characterSet = GRADIENTS[state.charPreset] || GRADIENTS.blocks;
+            if (state.invert) {
+                characterSet = [...characterSet].reverse();
+            }
+            const numChars = characterSet.length;
+            
+            for (let y = 0; y < canvasH; y++) {
+                for (let x = 0; x < canvasW; x++) {
+                    const idx = (y * canvasW + x) * 4;
+                    const r = pixels[idx];
+                    const g = pixels[idx + 1];
+                    const b = pixels[idx + 2];
+                    
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const charIdx = Math.min(Math.floor((gray / 256) * numChars), numChars - 1);
+                    const c = characterSet[charIdx];
+                    
+                    if (state.colorMode === 'bw') {
+                        eCtx.fillStyle = '#ffffff';
+                        eCtx.fillText(c, x * charWidth, y * charHeight);
+                    } else {
+                        if (state.renderStyle === 'bg') {
+                            eCtx.fillStyle = `rgb(${r},${g},${b})`;
+                            eCtx.fillRect(x * charWidth, y * charHeight, charWidth, charHeight);
+                        } else {
+                            eCtx.fillStyle = `rgb(${r},${g},${b})`;
+                            eCtx.fillText(c, x * charWidth, y * charHeight);
+                        }
+                    }
+                }
+            }
+            
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `ascii-art-${Date.now()}.png`;
+            link.click();
+        } catch (err) {
+            console.error('PNG Generation Error:', err);
+            alert('Failed to generate PNG image.');
+        } finally {
+            hideLoader();
+        }
+    }, 50);
 });
 
 // --- Helper Functions ---
